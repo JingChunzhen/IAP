@@ -18,10 +18,9 @@ class Data_Parser(object):
     to test the cluster effect 
     """
 
-    def __init__(self, file_stopwords, file_word2vec_bin, file_word2vec, file_sent2vec, file_doc2vec):
+    def __init__(self, file_stopwords, file_word2vec_bin, file_sent2vec, file_doc2vec):
         self.stop_words = self._load_stop_words(file_stopwords)
-        self.file_word2vec_bin = file_word2vec_bin
-        self.file_word2vec = file_word2vec
+        self.file_word2vec_bin = file_word2vec_bin        
         self.file_sent2vec = file_sent2vec
         self.file_doc2vec = file_doc2vec
         pass
@@ -34,16 +33,14 @@ class Data_Parser(object):
                 stop_words.append(line)
         return stop_words
 
-    def _line_parser(self, line, rid_stopwords):
+    def _line_parser(self, line, regx, rid_stopwords):
         """preprocess the data 
         Args:
             line (string): data needed to be preprocessed 
             rid_stopwords (boolean): True for rid of stop words False for else 
         Return:
             string
-        """
-        re_string = r'[^\u4e00-\u9fa5a-zA-Z0-9]'
-        regx = re.compile(re_string)
+        """        
         line = line.strip()
         ret_string = None
         if line == '':
@@ -66,9 +63,11 @@ class Data_Parser(object):
         return sha1
 
     def content_parse(self, file_in, file_out, rid_stopwords):
+        re_string = r'[^\u4e00-\u9fa5a-zA-Z0-9]'
+        regx = re.compile(re_string)
         with open(file_in, 'rb') as f_in, open(file_out, 'a+', encoding='utf-8') as f_out:
             for line in f_in:
-                new_line_string = self._line_parser(line, rid_stopwords)
+                new_line_string = self._line_parser(line, regx, rid_stopwords)
                 f_out.write(new_line_string)
 
     def get_word_vec(self, file_in, size):
@@ -76,23 +75,10 @@ class Data_Parser(object):
         Args:
             file_in (string): 
             szie (int): size of word embeddings
-        Return:
-            dict: word (string) -> vector (float array)
-
-        self.file_word2vec_bin a word2vec model stored 
-        self.file_word2vec a dict stored: key ->  string value -> word2vec shape = (size,)
-        the content in self.file_word2vec is the final result of this function
+        the model stored in self.file_word2vec_bin
         """
         word2vec.word2vec(file_in, self.file_word2vec_bin, size, verbose=False)
-        model = word2vec.load(self.file_word2vec_bin)
-        word_length = model.vocab.shape[0]
-
-        word_vec = dict()
-        for index in range(word_length):
-            word_vec[model.vocab[index]] = model.vectors[index]
-
-        with open(self.file_word2vec, 'wb') as f_out:
-            pickle.dump(word_vec, f_out)
+       
 
     def get_sent_vec(self, file_in, num_keywords):
         """        
@@ -107,8 +93,12 @@ class Data_Parser(object):
         sent_id = dict()
         id_sentvec = dict()
         id_sentonehot = dict()
-        with open(self.file_word2vec, 'rb') as f_in:
-            word_vec = pickle.load(f_in)
+        # with open(self.file_word2vec, 'rb') as f_in:
+        #     word_vec = pickle.load(f_in)
+        model = word2vec.load(self.file_word2vec_bin)
+
+        re_string = r'[^\u4e00-\u9fa5a-zA-Z0-9]'
+        regx = re.compile(re_string)
 
         corpus = []
         with open(file_in, 'rb') as f_in:
@@ -116,7 +106,7 @@ class Data_Parser(object):
             for line in f_in:
                 sha1 = self._get_hash(line)
                 sent_id[sha1] = i
-                line = self._line_parser(line, True)
+                line = self._line_parser(line, regx, True)
                 corpus.append(line)
                 i += 1
 
@@ -141,10 +131,10 @@ class Data_Parser(object):
             c = 0
             for index in temp_keys:
                 if tfidf_weight[i][index] != 0:
-                    if words[index] in word_vec:
-                        c += 1
-                        sentvec += word_vec[words[index]]  # TODO
-                    else:
+                    try:
+                        sentvec += model[words[index]] # TODO
+                        c += 1 
+                    except:
                         pass
 
             try:
@@ -173,8 +163,14 @@ class Data_Parser(object):
         doc_id = dict()
         id_docvec = dict()
         id_doconehot = dict()
-        with open(self.file_word2vec, 'rb') as f_in:
-            word_vec = pickle.load(f_in)
+
+        re_string = r'[^\u4e00-\u9fa5a-zA-Z0-9]'
+        regx = re.compile(re_string)
+
+        # with open(self.file_word2vec, 'rb') as f_in:
+        #     word_vec = pickle.load(f_in)
+
+        model = word2vec.load(self.file_word2vec_bin)
 
         corpus = []
         with open(file_in, 'rb') as f_in:
@@ -182,7 +178,7 @@ class Data_Parser(object):
             for line in f_in:
                 sha1 = self._get_hash(line)
                 doc_id[sha1] = i
-                line = self._line_parser(line, True)
+                line = self._line_parser(line, regx, True)
                 corpus.append(line)
                 i += 1
 
@@ -207,11 +203,11 @@ class Data_Parser(object):
             c = 0
             for index in temp_keys:
                 if tfidf_weight[i][index] != 0:
-                    if words[index] in word_vec:
+                    try:
                         c += 1
                         docvec += word_vec[words[index]]  # TODO
-                    else:
-                        pass
+                    except:
+                        pass                    
 
             try:
                 id_docvec[i] = docvec / c
@@ -234,15 +230,14 @@ if __name__ == "__main__":
 
     with open(file_confif, 'rb') as f:
         params = yaml.load(f)
-
+    
     data_parser = Data_Parser(
         file_stopwords=params['file_stopwords'],
-        file_word2vec_bin=params['file_word2vec_bin'],
-        file_word2vec=params['file_word2vec'],
+        file_word2vec_bin=params['file_word2vec_bin'],        
         file_sent2vec=params['file_sent2vec'],
         file_doc2vec=params['file_doc2vec']
     )
-
+    '''
     data_parser.content_parse(
         file_in=params['file_content'],
         file_out=params['file_normalized_content'],
@@ -253,7 +248,7 @@ if __name__ == "__main__":
         file_in=params['file_normalized_content'],
         size=50
     )
-
+    '''
     data_parser.get_sent_vec(
         file_in=params['file_sent'],
         num_keywords=5

@@ -1,6 +1,5 @@
 file_stopwords : './data/stopwords.txt'
-file_word2vec_bin : './output/temp/共享单车_word2vec_bin.bin'
-file_word2vec : './output/temp/共享单车_word2vec.txt'
+file_word2vec_bin : './output/word2vec_test.bin'
 file_sent2vec : './output/temp/共享单车_sent2vec.txt'
 file_doc2vec : './output/temp/共享单车_doc2vec.txt'
 
@@ -9,3 +8,4 @@ file_normalized_content : './output/temp/共享单车_normalized_content.txt'
 file_sent : './data/共享单车-语料/共享单车keySentence.txt'
 file_doc : './data/共享单车-语料/共享单车KeyParagraphs.txt'
 file_word: './data/共享单车-语料/共享单车keywords.txt'
+
