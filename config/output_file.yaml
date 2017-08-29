@@ -1,0 +1,20 @@
+file_stopwords : './data/stopwords.txt'
+file_word2vec_bin : './output/word2vec_test.bin'
+
+file_content : './data/共享单车-语料/共享单车content.txt'
+file_normalized_content : './output/temp/共享单车_normalized_content.txt'
+
+file_sent_bikesharing : './data/共享单车-语料/共享单车keySentence.txt'
+file_doc_bikesharing : './data/共享单车-语料/共享单车KeyParagraphs.txt'
+file_word_bikesharing : './data/共享单车-语料/共享单车keywords.txt'
+
+file_sent2vec_bikesharing : './output/temp/共享单车_sent2vec.txt'
+file_doc2vec_bikesharing : './output/temp/共享单车_doc2vec.txt'
+
+file_sent_xiongan : './data/雄安-语料/雄安keySentence.txt'
+file_doc_xiongan : './data/雄安-语料/雄安KeyParagraphs.txt'
+file_word_xiongan : './data/雄安-语料/雄安keywords.txt'
+
+file_sent2vec_xiongan : './output/temp/雄安_sent2vec.txt'
+file_doc2vec_xiongan : './output/temp/雄安_doc2vec.txt'
+
