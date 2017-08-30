@@ -4,6 +4,7 @@ import jieba
 import pickle
 import hashlib
 import yaml
+import numpy as np
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
@@ -125,7 +126,7 @@ class Data_Parser(object):
                 :num_keywords]
             temp_keys = [k for k, v in temp]
 
-            sentvec = 0
+            sentvec = np.zeros(shape=100) 
             c = 0
             for index in temp_keys:
                 if tfidf_weight[i][index] != 0:
@@ -135,9 +136,9 @@ class Data_Parser(object):
                     except:
                         pass
 
-            try:
-                id_sentvec[i] = sentvec / c
-            except:  # except for zero division error
+            if c != 0:
+                id_sentvec[i] = sentvec / c  # RuntimeWarning: invalid value encountered in true_divide
+            else:  # except for zero division error
                 id_sentvec[i] = sentvec
 
             id_sentonehot[i] = onehot_weight[i]
@@ -197,19 +198,19 @@ class Data_Parser(object):
                 :num_keywords]
             temp_keys = [k for k, v in temp]
 
-            docvec = 0
+            docvec = np.zeros(shape=100)
             c = 0
             for index in temp_keys:
                 if tfidf_weight[i][index] != 0:
                     try:
                         c += 1
-                        docvec += word_vec[words[index]]  # TODO
+                        docvec += model[words[index]]  # TODO
                     except:
                         pass                    
 
-            try:
+            if c != 0:
                 id_docvec[i] = docvec / c
-            except:
+            else:
                 id_docvec[i] = docvec
 
             id_doconehot[i] = onehot_weight[i]

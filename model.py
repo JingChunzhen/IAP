@@ -108,8 +108,8 @@ def sent_or_doc_cluster(original_file, file_in, feature, method, n_cluster):
             id_vec = pickle.load(f_in)
             id_onehot = pickle.load(f_in)
             x = []
-            for id, onehot in id_onehot.items():
-                x.append(onehot)
+            for i, onehot in id_onehot.items():
+                x.append(onehot.tolist())
 
             X = np.array(x)
 
@@ -140,8 +140,8 @@ def sent_or_doc_cluster(original_file, file_in, feature, method, n_cluster):
             id_vec = pickle.load(f_in)
             id_onehot = pickle.load(f_in)
             x = []
-            for i, vec in id_vec.items():
-                x.append(vec)
+            for i, vec in id_vec.items(): 
+                x.append(vec.tolist()) # int object jas nor attribute 'tolist'
 
             X = np.array(x)
 
@@ -203,6 +203,6 @@ if __name__ == '__main__':
         feature='vec',
         method='kmeans',
         n_cluster=10)
-
+    # ValueError: setting an array element with a sequence
 
     pass
