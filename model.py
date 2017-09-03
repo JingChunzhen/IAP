@@ -2,15 +2,17 @@ import word2vec
 import yaml
 import pickle
 import hashlib
-import linecache
 import numpy as np
 from cluster_algos import AffinityPropagation
 from sklearn.cluster import KMeans
 from sklearn import metrics
 from sklearn.metrics import euclidean_distances
 from sklearn.metrics.pairwise import cosine_distances
+from utils import load_stopwords, line_parse, show, write_to
 
-file_word2vec_bin = './output/word2vec_test.bin'
+
+with open('./config/output_file.yaml', 'rb') as f:
+    params = yaml.load(f)
 
 
 def keywords_cluster(file_in, method, n_cluster):
@@ -24,7 +26,7 @@ def keywords_cluster(file_in, method, n_cluster):
         content = f_in.read()
         content = content.decode('utf-8')
         words = content.split(' ')
-    model = word2vec.load(file_word2vec_bin)  # TODO
+    model = word2vec.load(params['file_word2vec_bin'])
     new_words = []
     x = []
     for word in words:
@@ -91,7 +93,7 @@ def keywords_cluster(file_in, method, n_cluster):
         pass
 
 
-def sent_or_doc_cluster(original_file, file_in, feature, method, n_cluster):
+def sent_or_doc_cluster(original_file, file_in, file_out, feature, method, n_cluster, show_or_write):
     """
     can be tested using one-hot, doc2vec, doc2vec self-made three features
     and can be tested using ap or kmeans 
@@ -131,7 +133,15 @@ def sent_or_doc_cluster(original_file, file_in, feature, method, n_cluster):
                 else:
                     cluster_ids[cluster].append(i)
             pass
-            _show(original_file, cluster_ids)
+            if show_or_write == 'show':
+                show(original_file, cluster_ids)
+            else:
+                write_to(
+                    original_file=original_file,
+                    file_out=file_out,
+                    file_stopwords=params['file_stopwords'],
+                    id_cluster=id_cluster,
+                    num_keywords=20)
         pass
 
     elif feature.lower() == 'vec':
@@ -140,8 +150,8 @@ def sent_or_doc_cluster(original_file, file_in, feature, method, n_cluster):
             id_vec = pickle.load(f_in)
             id_onehot = pickle.load(f_in)
             x = []
-            for i, vec in id_vec.items(): 
-                x.append(vec.tolist()) # int object jas nor attribute 'tolist'
+            for i, vec in id_vec.items():
+                x.append(vec.tolist())  # int object jas nor attribute 'tolist'
 
             X = np.array(x)
 
@@ -166,8 +176,15 @@ def sent_or_doc_cluster(original_file, file_in, feature, method, n_cluster):
                     cluster_ids[cluster].append(i)
                 else:
                     cluster_ids[cluster].append(i)
-            pass
-            _show(original_file, cluster_ids)
+            if show_or_write == 'show':
+                show(original_file, cluster_ids)
+            else:
+                write_to(
+                    original_file=original_file,
+                    file_out=file_out,
+                    file_stopwords=params['file_stopwords'],
+                    id_cluster=id_cluster,
+                    num_keywords=20)
         pass
     elif feature.lower() == 'doc2vec':
         # word2vec.doc2vec
@@ -180,29 +197,26 @@ def sent_or_doc_cluster(original_file, file_in, feature, method, n_cluster):
     pass
 
 
-def _show(original_file, cluster_ids):
-    for cluster, ids in cluster_ids.items():
-        print('+++++++++++++++++++++++++')
-        print(cluster)
-        for i in ids:
-            line = linecache.getline(original_file, i)
-            print(line)
-        pass
-    pass
-
-
 if __name__ == '__main__':
-    with open('./config/output_file.yaml', 'rb') as f:
-        params = yaml.load(f)
 
-    #keywords_cluster('./data/共享单车-语料/共享单车keywords.txt', 'kmeans', 10)
+    #keywords_cluster(params['file_word_xiongan'], 'kmeans', 20)
+
+    # sent_or_doc_cluster(
+    #     original_file=params['file_doc_xiongan'],
+    #     file_in=params['file_doc2vec_xiongan'],
+    #     feature='vec',
+    #     method='ap',
+    #     n_cluster=10)
+    # ValueError: setting an array element with a sequence
 
     sent_or_doc_cluster(
         original_file=params['file_sent_bikesharing'],
         file_in=params['file_sent2vec_bikesharing'],
+        file_out='./output/temp/共享单车sent_cluster.csv',
         feature='vec',
         method='kmeans',
-        n_cluster=10)
-    # ValueError: setting an array element with a sequence
+        n_cluster=10,
+        show_or_write='write'
+    )
 
     pass

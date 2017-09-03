@@ -8,6 +8,7 @@ import numpy as np
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
+from utils import load_stopwords, line_parse
 
 
 class Data_Parser(object):
@@ -18,44 +19,11 @@ class Data_Parser(object):
     """
 
     def __init__(self, file_stopwords, file_word2vec_bin, file_sent2vec, file_doc2vec):
-        self.stop_words = self._load_stop_words(file_stopwords)
-        self.file_word2vec_bin = file_word2vec_bin        
+        self.stop_words = load_stopwords(file_stopwords)
+        self.file_word2vec_bin = file_word2vec_bin
         self.file_sent2vec = file_sent2vec
         self.file_doc2vec = file_doc2vec
         pass
-
-    def _load_stop_words(self, file_stopwords):
-        stop_words = []
-        with open(file_stopwords, 'rb') as f_sw:
-            for line in f_sw:
-                line = line.decode('utf-8').strip()
-                stop_words.append(line)
-        return stop_words
-
-    def _line_parser(self, line, regx, rid_stopwords):
-        """preprocess the data 
-        Args:
-            line (string): data needed to be preprocessed 
-            rid_stopwords (boolean): True for rid of stop words False for else 
-        Return:
-            string
-        """        
-        line = line.strip()
-        ret_string = None
-        if line == '':
-            pass
-        else:
-            line = regx.sub('', line.decode('utf-8'))
-            line_seg = jieba.cut(line)
-            if rid_stopwords:
-                word_list = []
-                for word in line_seg:
-                    if word not in self.stop_words:
-                        word_list.append(word)
-                ret_string = ' '.join(word_list)
-            else:
-                ret_string = ' '.join(line_seg)
-        return ret_string
 
     def _get_hash(self, line):
         sha1 = hashlib.sha1(line).hexdigest()
@@ -66,7 +34,8 @@ class Data_Parser(object):
         regx = re.compile(re_string)
         with open(file_in, 'rb') as f_in, open(file_out, 'a+', encoding='utf-8') as f_out:
             for line in f_in:
-                new_line_string = self._line_parser(line, regx, rid_stopwords)
+                new_line_string = line_parse(
+                    line, regx, rid_stopwords, self.stop_words)
                 f_out.write(new_line_string)
 
     def get_word_vec(self, file_in, size):
@@ -77,7 +46,6 @@ class Data_Parser(object):
         the model stored in self.file_word2vec_bin
         """
         word2vec.word2vec(file_in, self.file_word2vec_bin, size, verbose=False)
-       
 
     def get_sent_vec(self, file_in, num_keywords):
         """        
@@ -105,7 +73,7 @@ class Data_Parser(object):
             for line in f_in:
                 sha1 = self._get_hash(line)
                 sent_id[sha1] = i
-                line = self._line_parser(line, regx, True)
+                line = line_parse(line, regx, True, self.stop_words)
                 corpus.append(line)
                 i += 1
 
@@ -126,18 +94,19 @@ class Data_Parser(object):
                 :num_keywords]
             temp_keys = [k for k, v in temp]
 
-            sentvec = np.zeros(shape=100) 
+            sentvec = np.zeros(shape=100)
             c = 0
             for index in temp_keys:
                 if tfidf_weight[i][index] != 0:
                     try:
-                        sentvec += model[words[index]] # TODO
-                        c += 1 
+                        sentvec += model[words[index]]  # TODO
+                        c += 1
                     except:
                         pass
 
             if c != 0:
-                id_sentvec[i] = sentvec / c  # RuntimeWarning: invalid value encountered in true_divide
+                # RuntimeWarning: invalid value encountered in true_divide
+                id_sentvec[i] = sentvec / c
             else:  # except for zero division error
                 id_sentvec[i] = sentvec
 
@@ -177,7 +146,7 @@ class Data_Parser(object):
             for line in f_in:
                 sha1 = self._get_hash(line)
                 doc_id[sha1] = i
-                line = self._line_parser(line, regx, True)
+                line = line_parse(line, regx, True, self.stop_words)
                 corpus.append(line)
                 i += 1
 
@@ -206,7 +175,7 @@ class Data_Parser(object):
                         c += 1
                         docvec += model[words[index]]  # TODO
                     except:
-                        pass                    
+                        pass
 
             if c != 0:
                 id_docvec[i] = docvec / c
@@ -229,12 +198,19 @@ if __name__ == "__main__":
 
     with open(file_config, 'rb') as f:
         params = yaml.load(f)
-    
-    data_parser = Data_Parser(
+
+    data_parser_bikesharing = Data_Parser(
         file_stopwords=params['file_stopwords'],
-        file_word2vec_bin=params['file_word2vec_bin'],        
+        file_word2vec_bin=params['file_word2vec_bin'],
         file_sent2vec=params['file_sent2vec_bikesharing'],
         file_doc2vec=params['file_doc2vec_bikesharing']
+    )
+
+    data_parser_xiongan = Data_Parser(
+        file_stopwords=params['file_stopwords'],
+        file_word2vec_bin=params['file_word2vec_bin'],
+        file_sent2vec=params['file_sent2vec_xiongan'],
+        file_doc2vec=params['file_doc2vec_xiongan']
     )
     '''
     data_parser.content_parse(
@@ -247,12 +223,22 @@ if __name__ == "__main__":
         size=50
     )
     '''
-    data_parser.get_sent_vec(
+    data_parser_bikesharing.get_sent_vec(
         file_in=params['file_sent_bikesharing'],
         num_keywords=5
     )
 
-    data_parser.get_doc_vec(
+    data_parser_bikesharing.get_doc_vec(
         file_in=params['file_doc_bikesharing'],
+        num_keywords=10
+    )
+
+    data_parser_xiongan.get_sent_vec(
+        file_in=params['file_sent_xiongan'],
+        num_keywords=5
+    )
+
+    data_parser_xiongan.get_doc_vec(
+        file_in=params['file_doc_xiongan'],
         num_keywords=10
     )
