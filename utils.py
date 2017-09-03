@@ -102,11 +102,48 @@ def write_to(original_file, file_out, file_stopwords, id_cluster, num_keywords=5
         temp = sorted(temp_dict.items(), key=lambda d: d[1], reverse=True)[
             :num_keywords]
         keywords_list = [words[k] for k, v in temp]
-        
-        keywords_string = ' '.join(keywords_list)        
-        
-        data.append([id_cluster[i], keywords_string, original_corpus[i].decode('utf-8')])    
 
-    pd_dist = pd.DataFrame(data=data, index=None, columns=['cluster_id', 'key_words', 'content'])
+        keywords_string = ' '.join(keywords_list)
+
+        data.append([id_cluster[i], keywords_string,
+                     original_corpus[i].decode('utf-8')])
+
+    pd_dist = pd.DataFrame(data=data, index=None, columns=[
+                           'cluster_id', 'key_words', 'content'])
+    pd_dist = pd_dist.sort_values(by='cluster_id', ascending=True)
+    pd_dist.to_csv(file_out)
+
+
+def write_to_2(original_content_file, original_words_file, file_out, file_stopwords, id_cluster):
+    '''
+    '''
+    data = []
+    stopwords = load_stopwords(file_stopwords)
+    re_string = r'[^\u4e00-\u9fa5a-zA-Z0-9]'
+    regx = re.compile(re_string)
+
+    with open(original_words_file, 'rb') as f_in:
+        content = f_in.read().decode('utf-8')
+        key_words = content.split(' ')
+
+    with open(original_content_file, 'rb') as f:
+        i = 0
+        for original_line in f:
+            #original_corpus.append(original_line)
+            line = line_parse(original_line, regx, True, stopwords)
+
+            words_list = line.split(' ')
+            new_words = []
+            for word in words_list:
+                if word in key_words:
+                    new_words.append(word)
+
+            keywords_string = ' '.join(new_words)
+            data.append([id_cluster[i], keywords_string, original_line.decode('utf-8')])
+
+            i += 1
+
+    pd_dist = pd.DataFrame(data=data, columns=[
+                           'cluster_id', 'key_words', 'content'])
     pd_dist = pd_dist.sort_values(by='cluster_id', ascending=True)
     pd_dist.to_csv(file_out)
