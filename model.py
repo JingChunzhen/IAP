@@ -8,7 +8,9 @@ from sklearn.cluster import KMeans
 from sklearn import metrics
 from sklearn.metrics import euclidean_distances
 from sklearn.metrics.pairwise import cosine_distances
-from utils import load_stopwords, line_parse, show, write_to
+from utils import load_stopwords, line_parse, show, \
+    data_analysis_using_tfidf, data_analysis_using_keywords, data_analysis_using_keywords_2, \
+    data_analysis_using_keywords_3
 
 
 with open('./config/output_file.yaml', 'rb') as f:
@@ -136,7 +138,7 @@ def sent_or_doc_cluster(original_file, file_in, file_out, feature, method, n_clu
             if show_or_write == 'show':
                 show(original_file, cluster_ids)
             else:
-                write_to(
+                data_analysis_using_keywords_2(
                     original_file=original_file,
                     file_out=file_out,
                     file_stopwords=params['file_stopwords'],
@@ -179,12 +181,20 @@ def sent_or_doc_cluster(original_file, file_in, file_out, feature, method, n_clu
             if show_or_write == 'show':
                 show(original_file, cluster_ids)
             else:
-                write_to(
-                    original_file=original_file,
+                # write_to(
+                #     original_file=original_file,
+                #     file_out=file_out,
+                #     file_stopwords=params['file_stopwords'],
+                #     id_cluster=id_cluster,
+                #     num_keywords=20)
+
+                data_analysis_using_keywords_3(
+                    file_in=original_file,
                     file_out=file_out,
+                    original_words_file=params['file_word_bikesharing'],
                     file_stopwords=params['file_stopwords'],
-                    id_cluster=id_cluster,
-                    num_keywords=20)
+                    cluster_ids=cluster_ids
+                )
         pass
     elif feature.lower() == 'doc2vec':
         # word2vec.doc2vec
@@ -212,10 +222,10 @@ if __name__ == '__main__':
     sent_or_doc_cluster(
         original_file=params['file_sent_bikesharing'],
         file_in=params['file_sent2vec_bikesharing'],
-        file_out='./output/temp/共享单车sent_cluster.csv',
+        file_out='./output/temp/共享单车sent_cluster_data_analysis.csv',
         feature='vec',
-        method='kmeans',
-        n_cluster=10,
+        method='ap',
+        n_cluster=20,
         show_or_write='write'
     )
 

@@ -1,11 +1,17 @@
 import re
 import jieba
 import pandas as pd
+import numpy as np
 import linecache
+import word2vec
+import yaml
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
+from cluster_algos import AffinityPropagation
 
+with open('./config/output_file.yaml', 'rb') as f:
+    params = yaml.load(f)
 
 def load_stopwords(file_stopwords):
     stop_words = []
@@ -28,11 +34,14 @@ def line_parse(line, regx, rid_stopwords, stop_words):
         string: string of words seperated by space 
     '''
     line = line.strip()
-    ret_string = None
+    ret_string = ''
     if line == '':
         pass
     else:
-        line = regx.sub('', line.decode('utf-8'))
+        if type(line) is not str:
+            line = regx.sub('', line.decode('utf-8'))
+        else:
+            line = regx.sub('', line)
         line_seg = jieba.cut(line)
         if rid_stopwords:
             word_list = []
@@ -62,7 +71,7 @@ def show(original_file, cluster_ids):
     pass
 
 
-def write_to(original_file, file_out, file_stopwords, id_cluster, num_keywords=5):
+def data_analysis_using_tfidf(original_file, file_out, file_stopwords, id_cluster, num_keywords=5):
     '''
     visualize the clustering result stored in a file     
     Args:
@@ -114,7 +123,7 @@ def write_to(original_file, file_out, file_stopwords, id_cluster, num_keywords=5
     pd_dist.to_csv(file_out)
 
 
-def write_to_2(original_content_file, original_words_file, file_out, file_stopwords, id_cluster):
+def data_analysis_using_keywords(original_content_file, original_words_file, file_out, file_stopwords, id_cluster):
     '''
     '''
     data = []
@@ -129,17 +138,18 @@ def write_to_2(original_content_file, original_words_file, file_out, file_stopwo
     with open(original_content_file, 'rb') as f:
         i = 0
         for original_line in f:
-            #original_corpus.append(original_line)
+            # original_corpus.append(original_line)
             line = line_parse(original_line, regx, True, stopwords)
 
             words_list = line.split(' ')
-            new_words = []
+            new_words = set()
             for word in words_list:
                 if word in key_words:
-                    new_words.append(word)
+                    new_words.add(word)
 
-            keywords_string = ' '.join(new_words)
-            data.append([id_cluster[i], keywords_string, original_line.decode('utf-8')])
+            keywords_string = ' '.join(list(new_words))
+            data.append([id_cluster[i], keywords_string,
+                         original_line.decode('utf-8')])
 
             i += 1
 
@@ -147,3 +157,88 @@ def write_to_2(original_content_file, original_words_file, file_out, file_stopwo
                            'cluster_id', 'key_words', 'content'])
     pd_dist = pd_dist.sort_values(by='cluster_id', ascending=True)
     pd_dist.to_csv(file_out)
+
+
+def data_analysis_using_keywords_2(file_in, file_out, original_words_file, file_stopwords, cluster_ids):
+
+    data = []
+    stop_words = load_stopwords(file_stopwords)
+    re_string = r'[^\u4e00-\u9fa5a-zA-Z0-9]'
+    regx = re.compile(re_string)
+
+    with open(original_words_file, 'rb') as f_in:
+        content = f_in.read().decode('utf-8')
+        key_words = content.split(' ')
+
+    for c, ids in cluster_ids.items():
+        temp_dict = {}
+
+        for i in ids:
+            temp_set = set()
+            line = line_parse(linecache.getline(file_in, i), regx, True, stop_words)
+            words_list = line.split(' ')
+
+            for word in words_list:
+                if word in key_words:
+                    temp_set.add(word)
+
+            for word in temp_set:
+                temp_dict[word] = temp_dict.get(word, 0) + 1
+
+        temp_list = sorted(temp_dict.items(), key=lambda d: d[1], reverse=True)
+        
+        word_count = [w + ':' + str(c) for w, c in temp_list]
+        data.append([c, ' '.join(word_count)])
+
+    pd_dist = pd.DataFrame(data=data, columns=['cluster', 'keywords'])
+
+    pd_dist = pd_dist.sort_values(by='cluster', ascending=True)
+    pd_dist.to_csv(file_out)
+
+def data_analysis_using_keywords_3(file_in, file_out, original_words_file, file_stopwords, cluster_ids):
+
+    data = []
+    stop_words = load_stopwords(file_stopwords)
+    model = word2vec.load(params['file_word2vec_bin'])
+    re_string = r'[^\u4e00-\u9fa5a-zA-Z0-9]'
+    regx = re.compile(re_string)
+
+    with open(original_words_file, 'rb') as f_in:
+        content = f_in.read().decode('utf-8')
+        key_words = content.split(' ')
+
+    for c, ids in cluster_ids.items():
+        # temp_dict = {}
+
+        for i in ids:
+            temp_set = set()
+            line = line_parse(linecache.getline(file_in, i), regx, True, stop_words)
+            words_list = line.split(' ')
+
+            for word in words_list:
+                if word in key_words:
+                    temp_set.add(word)
+                    
+        x = []
+
+        words = list(temp_set)
+        for word in words:
+            x.append(model[word].tolist())
+        
+        X = np.array(x)
+
+        ap = AffinityPropagation(affinity='cosine').fit(X)
+        indices = ap.cluster_centers_indices_
+
+        cluster_words = []
+        for indice in indices:
+            cluster_words.append(words[indice])
+            
+        data.append([c, ' '.join(cluster_words)])       
+
+    pd_dist = pd.DataFrame(data=data, columns=['cluster', 'keywords'])
+
+    pd_dist = pd_dist.sort_values(by='cluster', ascending=True)
+    pd_dist.to_csv(file_out)
+
+    pass
