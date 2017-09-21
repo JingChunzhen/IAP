@@ -8,16 +8,14 @@ from sklearn.cluster import KMeans
 from sklearn import metrics
 from sklearn.metrics import euclidean_distances
 from sklearn.metrics.pairwise import cosine_distances
-from utils import load_stopwords, line_parse, show, \
-    data_analysis_using_tfidf, data_analysis_using_keywords, data_analysis_using_keywords_2, \
-    data_analysis_using_keywords_3
-
+from utils import load_stopwords, line_parse, show, keywords_cluster_write_to_file, \
+    keycontent_cluster_write_to_file, keycontent_cluster_digest
 
 with open('./config/output_file.yaml', 'rb') as f:
     params = yaml.load(f)
 
 
-def keywords_cluster(file_in, method, n_cluster):
+def keywords_cluster(file_in, file_out, method, n_cluster, show_or_write):
     """keywords clustering
     Args:
         file_in (string): keywords
@@ -60,11 +58,12 @@ def keywords_cluster(file_in, method, n_cluster):
             else:
                 cluster_words[c].append(w)
 
-        for c, ws in cluster_words.items():
-            print(c)
-            print(ws)
-
-        pass
+        if show_or_write == 'show':
+            for c, ws in cluster_words.items():
+                print(c)
+                print(ws)
+        else:
+            keywords_cluster_write_to_file(file_out, cluster_words)
 
     elif method.lower() == 'kmeans':
         km = KMeans(n_clusters=n_cluster).fit(X)
@@ -82,10 +81,12 @@ def keywords_cluster(file_in, method, n_cluster):
             else:
                 cluster_words[c].append(w)
 
-        for c, ws in cluster_words.items():
-            print(c)
-            print(ws)
-
+        if show_or_write == 'show':
+            for c, ws in cluster_words.items():
+                print(c)
+                print(ws)
+        else:
+            keywords_cluster_write_to_file(file_out, cluster_words)
         pass
 
     else:
@@ -95,19 +96,25 @@ def keywords_cluster(file_in, method, n_cluster):
         pass
 
 
-def sent_or_doc_cluster(original_file, file_in, file_out, feature, method, n_cluster, show_or_write):
+def sent_or_doc_cluster(file_in, file_out, feature, method, n_cluster, show_or_write):
     """
     can be tested using one-hot, doc2vec, doc2vec self-made three features
     and can be tested using ap or kmeans 
-    Args:
-        original (string): file for sentences or docs 
-        file_in (string): file preprocessed by data_parser with vectors and dict stored
+    Args:         
+        file_in (list): [original_file, original_words_file, file_vec]
+            file preprocessed by data_parser with vectors and dict stored
+        file_out (list): [file_out for cluster table, file_out for cluster digest]
         feature (string): can only be one-hot, vec (normalized vectors), doc2vec
         method (string): can either be 'ap' or 'kmeans'
         n_cluster (int): cluster num for kmeans method 
     """
+
+    original_file = file_in[0]
+    original_words_file = file_in[1]
+    file_vec = file_in[2]
+
     if feature.lower() == 'onehot':
-        with open(file_in, 'rb') as f_in:
+        with open(file_vec, 'rb') as f_in:
             content_id = pickle.load(f_in)
             id_vec = pickle.load(f_in)
             id_onehot = pickle.load(f_in)
@@ -138,16 +145,20 @@ def sent_or_doc_cluster(original_file, file_in, file_out, feature, method, n_clu
             if show_or_write == 'show':
                 show(original_file, cluster_ids)
             else:
-                data_analysis_using_keywords_2(
-                    original_file=original_file,
-                    file_out=file_out,
-                    file_stopwords=params['file_stopwords'],
-                    id_cluster=id_cluster,
-                    num_keywords=20)
+                keycontent_cluster_write_to_file(
+                    file_in=[original_file, original_words_file],
+                    file_out=file_out[0],
+                    id_cluster
+                )
+                keycontent_cluster_digest(
+                    file_in=[original_file, original_words_file],
+                    file_out=file_out[1],
+                    cluster_ids=cluster_ids
+                )
         pass
 
     elif feature.lower() == 'vec':
-        with open(file_in, 'rb') as f_in:
+        with open(file_vec, 'rb') as f_in:
             content_id = pickle.load(f_in)
             id_vec = pickle.load(f_in)
             id_onehot = pickle.load(f_in)
@@ -181,18 +192,14 @@ def sent_or_doc_cluster(original_file, file_in, file_out, feature, method, n_clu
             if show_or_write == 'show':
                 show(original_file, cluster_ids)
             else:
-                # write_to(
-                #     original_file=original_file,
-                #     file_out=file_out,
-                #     file_stopwords=params['file_stopwords'],
-                #     id_cluster=id_cluster,
-                #     num_keywords=20)
-
-                data_analysis_using_keywords_3(
-                    file_in=original_file,
-                    file_out=file_out,
-                    original_words_file=params['file_word_bikesharing'],
-                    file_stopwords=params['file_stopwords'],
+                keycontent_cluster_write_to_file(
+                    file_in=[original_file, original_words_file],
+                    file_out=file_out[0],
+                    id_cluster
+                )
+                keycontent_cluster_digest(
+                    file_in=[original_file, original_words_file],
+                    file_out=file_out[1],
                     cluster_ids=cluster_ids
                 )
         pass
@@ -209,24 +216,22 @@ def sent_or_doc_cluster(original_file, file_in, file_out, feature, method, n_clu
 
 if __name__ == '__main__':
 
-    #keywords_cluster(params['file_word_xiongan'], 'kmeans', 20)
-
-    # sent_or_doc_cluster(
-    #     original_file=params['file_doc_xiongan'],
-    #     file_in=params['file_doc2vec_xiongan'],
-    #     feature='vec',
-    #     method='ap',
-    #     n_cluster=10)
-    # ValueError: setting an array element with a sequence
-
-    sent_or_doc_cluster(
-        original_file=params['file_sent_bikesharing'],
-        file_in=params['file_sent2vec_bikesharing'],
-        file_out='./output/temp/共享单车sent_cluster_data_analysis.csv',
-        feature='vec',
-        method='ap',
-        n_cluster=20,
-        show_or_write='write'
-    )
-
-    pass
+    for method in ['ap', 'KMeans']:
+        keywords_cluster(
+            file_in=params['file_word_bikesharing'],
+            file_out='./output/共享单车/cluster_table_word_using_{}.csv'.format(method), 
+            method=method,
+            n_cluster=20,
+            show_or_write='write'
+        )
+        sent_or_doc_cluster(
+            file_in=[params['file_sent_bikesharing', 'file_word_bikesharing', 'file_sent2vec_bikesharing']],
+            file_out=['./output/共享单车/cluster_table_sent_using_{}.csv'.format(method), 
+                './output/共享单车/cluster_digest_sent_using_{}.csv'.format(method)],
+            feature='vec',
+            method=method,
+            n_cluster=20,
+            show_or_write='write'
+        )
+        
+        

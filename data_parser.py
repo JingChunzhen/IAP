@@ -212,17 +212,21 @@ if __name__ == "__main__":
         file_sent2vec=params['file_sent2vec_xiongan'],
         file_doc2vec=params['file_doc2vec_xiongan']
     )
-    '''
-    data_parser.content_parse(
-        file_in=params['file_content'],
-        file_out=params['file_normalized_content'],
-        rid_stopwords=False
+
+    data_parser_gaotie = Data_Parser(
+        file_stopwords=params['file_stopwords'],
+        file_word2vec_bin=params['file_word2vec_bin'],
+        file_sent2vec=params['file_sent2vec_gaotie'],
+        file_doc2vec=params['file_doc2vec_gaotie']
     )
-    data_parser.get_word_vec(
-        file_in=params['file_normalized_content'],
-        size=50
+
+    data_parser_beima = Data_Parser(
+        file_stopwords=params['file_stopwords'],
+        file_word2vec_bin=params['file_word2vec_bin'],
+        file_sent2vec=params['file_sent2vec_beima'],
+        file_doc2vec=params['file_doc2vec_beima']
     )
-    '''
+   
     data_parser_bikesharing.get_sent_vec(
         file_in=params['file_sent_bikesharing'],
         num_keywords=5
@@ -240,5 +244,25 @@ if __name__ == "__main__":
 
     data_parser_xiongan.get_doc_vec(
         file_in=params['file_doc_xiongan'],
+        num_keywords=10
+    )
+
+    data_parser_gaotie.get_sent_vec(
+        file_in=params['file_sent_gaotie'],
+        num_keywords=5
+    )
+
+    data_parser_gaotie.get_doc_vec(
+        file_in=params['file_doc_gaotie'],
+        num_keywords=10
+    )
+
+    data_parser_beima.get_sent_vec(
+        file_in=params['file_sent_beima'],
+        num_keywords=5
+    )
+
+    data_parser_beima.get_doc_vec(
+        file_in=params['file_doc_beima'],
         num_keywords=10
     )
