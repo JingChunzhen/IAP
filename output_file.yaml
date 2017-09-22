@@ -1,0 +1,40 @@
+file_stopwords : './data/stopwords.txt'
+file_word2vec_bin : './output/word2vec_test.bin'
+
+file_content_bikesharing: './data/共享单车/共享单车content.txt'
+file_content_xiongan: './data/雄安/雄安content.txt'
+file_content_gaotie: './data/高铁/高铁content.txt'
+file_content_beima: './data/北马/北马content.txt'
+
+file_word_bikesharing: './data/共享单车/共享单车keywords.txt'
+file_word_xiongan: './data/雄安/雄安keywords.txt'
+file_word_gaotie: './data/高铁/高铁keywords.txt'
+file_word_beima: './data/北马/北马keywords.txt'
+
+file_sent_bikesharing: './data/共享单车/共享单车keySentences.txt'
+file_sent_xiongan: './data/雄安/雄安keySentences.txt'
+file_sent_gaotie: './data/高铁/高铁keySentences.txt'
+file_sent_beima: './data/北马/北马keySentences.txt'
+
+file_doc_bikesharing: './data/共享单车/共享单车keyParagraphs.txt' 
+file_doc_xiongan: './data/雄安/雄安keyParagraphs.txt'
+file_doc_gaotie: './data/高铁/高铁keyParagraphs.txt'
+file_doc_beima: './data/北马/北马keyParagraphs.txt'
+
+file_sent2vec_bikesharing: './output/temp/共享单车/sent2vec.txt'
+file_sent2vec_xiongan: './output/temp/雄安/sent2vec.txt'
+file_sent2vec_gaotie: './output/temp/高铁/sent2vec.txt'
+file_sent2vec_beima: './output/temp/北马/sent2vec.txt'
+
+file_doc2vec_bikesharing: './output/temp/共享单车/doc2vec.txt'
+file_doc2vec_xiongan: './output/temp/雄安/doc2vec.txt'
+file_doc2vec_gaotie: './output/temp/高铁/doc2vec.txt'
+file_doc2vec_beima: './output/temp/北马/doc2vec.txt'
+
+
+
+
+
+
+
+
